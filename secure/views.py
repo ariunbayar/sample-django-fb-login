@@ -1,9 +1,13 @@
 import uuid
 
+
 from django.conf import settings
+from django.contrib import auth
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, Http404
 from django.http import QueryDict
 from django.shortcuts import render, reverse, redirect
+from main.fbclient import FBClient
 
 
 def login(request):
@@ -46,17 +50,55 @@ def check_fb_login(request):
     if request.session.get('login_state') == state:
         raise Http404('Error: login state mismatch')
 
-    # Check if login succeeded
-    code = request.GET.get('code')
-    if code:  # Login success and code acquired
-        return HttpResponse('TODO proceed fb login')
-    else:
+    def _create_account(User, user_info, access_token):
+        user = User()
+        user.username = 'facebook_user_' + user_info.get('id')
+        user.first_name = user_info.get('first_name')
+        user.last_name = user_info.get('last_name')
+        user.is_active = True
+        user.access_token = access_token
+        user.save()
+        return user
+
+    try:
+
+        code = request.GET.get('code')
+        if not code:
+            message = request.GET.get('error_description', 'Login failed')
+            raise Exception(message)
+
+        fbclient = FBClient(settings.FB_APP)
+
+        redirect_uri = request.build_absolute_uri(reverse('check_fb_login'))
+
+        token = fbclient.fetch_access_token(code, redirect_uri)
+        if 'error' in token:
+            raise Exception(token['error'].get('message'))
+
+        # Login success
+
+        user_info = fbclient.fetch_user_info()
+        if 'error' in user_info:
+            raise Exception(user_info['error'].get('message'))
+
+        User = auth.get_user_model()
+        try:
+            user = User.objects.get(fb_user_id=user_info.get('id'))
+        except User.DoesNotExist:
+            user = _create_account(User, user_info, token.get('access_token'))
+
+        auth.login(request, user)
+
+        return redirect('user-profile')
+
+    except Exception as error:
         q = QueryDict(mutable=True)
-        q['error'] = request.GET.get('error_description', 'Login failed')
+        q['error'] = str(error)
 
         return redirect(reverse('login') + '?' + q.urlencode(safe='/'))
 
 
+@login_required
 def logout(request):
-
-    return HttpResponse('TODO logout_fb')
+    auth.logout(request)
+    return redirect('login')
