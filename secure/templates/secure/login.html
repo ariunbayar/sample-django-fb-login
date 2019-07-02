@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<p>This application uses Facebook for login.</p>
+<p>Click the button below to login</p>
+
+<a href="{% url 'redirect_to_fb_login' %}" class="fb-login-button">Login with Facebook</a>
+
+{% if login_error %}
+    <p>We cannot log you in this time. Error: {{ login_error }}</p>
+{% endif %}
+
+{% endblock %}

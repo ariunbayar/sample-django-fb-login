@@ -8,3 +8,8 @@ SECRET_KEY = ''
 DEBUG = False
 
 ALLOWED_HOSTS = ['*']
+
+FB_APP = {
+        'id': '',
+        'scope': 'public_profile',
+    }
