@@ -44,6 +44,7 @@ def check_fb_login(request):
         user.username = 'facebook_user_' + user_info.get('id')
         user.first_name = user_info.get('first_name')
         user.last_name = user_info.get('last_name')
+        user.fb_user_id = user_info.get('id')
         user.is_active = True
         user.access_token = access_token
         user.save()
