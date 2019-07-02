@@ -12,4 +12,5 @@ ALLOWED_HOSTS = ['*']
 FB_APP = {
         'id': '',
         'scope': 'public_profile',
+        'secret': '408d67eefe8c7153cbf9cec65e0fd6e0',
     }
