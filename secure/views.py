@@ -1,5 +1,8 @@
+from base64 import b64decode
+import hashlib
+import hmac
+import json
 import uuid
-
 
 from django.conf import settings
 from django.contrib import auth
@@ -7,6 +10,9 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, Http404
 from django.http import QueryDict
 from django.shortcuts import render, reverse, redirect
+from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+
 from main.fbclient import FBClient
 
 
@@ -92,3 +98,36 @@ def check_fb_login(request):
 def logout(request):
     auth.logout(request)
     return redirect('login')
+
+
+@csrf_exempt
+def deauth_facebook(request):
+
+    # Ref: https://developers.facebook.com/docs/games/gamesonfacebook/login#parsingsr
+
+    def _base64_url_decode(data):
+        data = data.replace('-', '+').replace('_', '/')
+        data += '=' * (4 - len(data) % 4)
+        return b64decode(data)
+
+    signed_request = request.POST.get('signed_request')
+    encoded_sig, payload = signed_request.split('.', 1)
+
+    secret = settings.FB_APP['secret']
+
+    # decode data
+    sig = _base64_url_decode(encoded_sig)
+    data = json.loads(_base64_url_decode(payload))
+
+    if data.get('algorithm') != 'HMAC-SHA256':
+        raise Exception('undefined hash: ' + data.get('algorithm'))
+
+    expected_sig = hmac.new(secret.encode(), msg=payload.encode(), digestmod=hashlib.sha256).digest()
+    if sig != expected_sig:
+        raise Http404
+
+    user = get_object_or_404(auth.get_user_model(), fb_user_id=data.get('user_id'))
+    user.is_active = False
+    user.save()
+
+    return HttpResponse('Success')
