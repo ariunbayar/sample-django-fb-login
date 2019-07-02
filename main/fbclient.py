@@ -9,6 +9,22 @@ class FBClient:
         self.scope = app_config['scope']
         self.access_token = access_token
 
+    def get_login_url(self, redirect_uri, login_state):
+
+        login_url = (
+                'https://www.facebook.com/v3.3/dialog/oauth?'
+                'client_id={app_id}'
+                '&redirect_uri={redirect_uri}'
+                '&state={state_param}'
+                '&scope={scope}'
+            ).format(
+                app_id=self.app_id,
+                redirect_uri=redirect_uri,
+                state_param=login_state,
+                scope=self.scope,
+            )
+        return login_url
+
     def fetch_access_token(self, code, redirect_uri):
 
         # According to FB:

@@ -26,19 +26,8 @@ def redirect_to_fb_login(request):
     login_state = uuid.uuid4().hex
     request.session['login_state'] = login_state
 
-    # Build Facebook login url
-    fb_login_dialog_url = (
-            'https://www.facebook.com/v3.3/dialog/oauth?'
-            'client_id={app_id}'
-            '&redirect_uri={redirect_uri}'
-            '&state={state_param}'
-            '&scope={scope}'
-        ).format(
-            app_id=settings.FB_APP['id'],
-            redirect_uri=redirect_uri,
-            state_param=login_state,
-            scope=settings.FB_APP['scope'],
-        )
+    fbclient = FBClient(settings.FB_APP)
+    fb_login_dialog_url = fbclient.get_login_url(redirect_uri, login_state)
 
     return redirect(fb_login_dialog_url)
 
