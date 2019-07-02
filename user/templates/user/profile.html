@@ -2,7 +2,12 @@
 
 {% block content %}
 
-user profile
+<div>
+    <p>{{ name }}</p>
+
+    <img width="picture.width" height="picture.height" src="{{ picture.url }}" alt="Profile picture"/>
+
+</div>
 
 <a href="{% url "logout" %}">Logout</a>
 
